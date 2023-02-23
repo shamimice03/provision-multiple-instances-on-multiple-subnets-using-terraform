@@ -19,7 +19,7 @@ See the following chart for a better understanding:
 | Private Subnet-1 | ap-northeast-1c |  2
 
 ### VPC:
-Let's start with creating a VPC using the VPC module:
+Let's start with creating a `VPC` using the VPC module:
 
 ```
 module "vpc" {
@@ -46,7 +46,7 @@ module "vpc" {
 ```
 
 ### Local Varibles
-To achieve our main goal, which is to provision multiple instances on multiple subnets, we can create two local variables like this:
+To achieve our main goal, which is to provision multiple instances on multiple subnets, we can create two `local` variables like this:
 
 ```
 locals {
@@ -80,7 +80,7 @@ locals {
 }
 
 ```
-We can use `terraform console` to see what these two local variables will generate:
+We can use `terraform console` to see what these two `local` variables will generate:
 ```
 terraform console
 local.public_instance_conf
