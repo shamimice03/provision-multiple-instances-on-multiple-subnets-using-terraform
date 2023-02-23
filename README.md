@@ -1,8 +1,10 @@
 ## Provision multiple instances on multiple subnets using terraform
-Suppose, we are in a situation where we have 3 public subnets and 2 private subnets. And on top of that, we have to provision 3 EC2 instances on each public subnet and 2 EC2 instances on each private subnet.
+### Overview
+Suppose, we are in a situation where we have three public subnets and two private subnets. And on top of that, we require to provision three EC2 instances on each public subnet and two EC2 instances on each private subnet.
 
+See the following chart for a better understanding:
 
-### See the following charts for a better understanding:
+#### See the following charts for a better understanding:
 ### Public Instances
 | Public subnet  | AZ | Instance Count         
 | ------------- |:-------------:| :-------------:|
@@ -17,7 +19,8 @@ Suppose, we are in a situation where we have 3 public subnets and 2 private subn
 | Private Subnet-1 | ap-northeast-1c |  2
 
 ### VPC:
-Let's create the VPC:
+Let's start with creating a VPC using the VPC module:
+
 ```
 module "vpc" {
 
@@ -43,7 +46,7 @@ module "vpc" {
 ```
 
 ### Local Varibles
-To achieve our main goal which is to provision multiple instances on multiple subnets, we can create two local variables like this:
+To achieve our main goal, which is to provision multiple instances on multiple subnets, we can create two local variables like this:
 
 ```
 locals {
@@ -77,7 +80,7 @@ locals {
 }
 
 ```
-We can use `terraform console` to see what these two `local` variables will generate:
+We can use `terraform console` to see what these two local variables will generate:
 ```
 terraform console
 local.public_instance_conf
@@ -122,14 +125,14 @@ The two `local` variables will generate some like this:
 ]
 ```
 
-But we are still not done. We have to `flatten` the generated configuration. So that, we can use it inside the `aws_instance` resource block.
+But we still need to finish. We have to flatten the generated configuration. So, we can use it inside the `aws_instance` resource block.
 ```
 locals {
   public_instance  = flatten(local.public_instance_conf)
   private_instance = flatten(local.private_instance_conf)
 }
 ```
-Similary, to check the output after applying `flatten` function. Use `terraform console`
+Similarly, we can check the output after applying `flatten` function. Use `terraform console`
 ```
 > local.public_instance
 [
@@ -207,7 +210,7 @@ resource "aws_instance" "private_hosts" {
 In the above configuration the tricky part is the following line: 
 `for_each = { for key, value in local.public_instance : key => value }`
 
-The above line will help us to identify the configuration of each instance separately by creating `key` for each of the configuration. If we run `terraform console` once more and run this `{ for key, value in local.public_instance : key => value }` command, then we will see that difference:
+The above line will help us to identify the configuration of each instance separately by creating `key` for each configuration. If we run `terraform console` once more and run the following command, then we will see the differences:
 
 ```
 > {for key, value in local.public_instance : key => value}
