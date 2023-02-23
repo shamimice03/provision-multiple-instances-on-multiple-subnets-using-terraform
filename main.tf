@@ -1,3 +1,4 @@
+################## Create VPC  ################## 
 module "vpc" {
 
   source = "github.com/shamimice03/terraform-aws-vpc"
@@ -14,16 +15,52 @@ module "vpc" {
   enable_single_nat_gateway = false
 
   tags = {
-    "Team" = "Platform-team"
+    "Team" = "platform-team"
     "Env"  = "test"
   }
 
 }
 
-################## Create Security Group ################## 
+################## Local Variables  ################## 
+locals {
+  public_subnets  = module.vpc.public_subnet_id
+  private_subnets = module.vpc.private_subnet_id
+  vpc_id          = module.vpc.vpc_id
+
+  public_instance_conf = [
+    for index, subnet in local.public_subnets : [
+      for i in range(var.public_instance_per_subnet) : {
+        ami                    = data.aws_ami.amazon_linux_ami.id
+        instance_type          = var.instance_type
+        subnet_id              = subnet
+        key_name               = aws_key_pair.aws_ec2_access_key.id
+        vpc_security_group_ids = [aws_security_group.public_sg.id]
+      }
+    ]
+  ]
+
+  private_instance_conf = [
+    for index, subnet in local.private_subnets : [
+      for i in range(var.private_instance_per_subnet) : {
+        ami                    = data.aws_ami.amazon_linux_ami.id
+        instance_type          = var.instance_type
+        subnet_id              = subnet
+        key_name               = aws_key_pair.aws_ec2_access_key.id
+        vpc_security_group_ids = [aws_security_group.private_sg.id]
+      }
+
+    ]
+  ]
+
+  public_instance  = flatten(local.public_instance_conf)
+  private_instance = flatten(local.private_instance_conf)
+}
+
+################## Create Security Group for Public Instances  ################## 
 resource "aws_security_group" "public_sg" {
   name        = "allow_public_access"
-  description = "Allow SSH from Anywhere"
+  description = "Allow Traffic from Anywhere"
+  vpc_id      = local.vpc_id
 
   dynamic "ingress" {
 
@@ -48,10 +85,11 @@ resource "aws_security_group" "public_sg" {
   }
 }
 
-################## Create Security Group ################## 
+################## Create Security Group for Private Instances  ################## 
 resource "aws_security_group" "private_sg" {
   name        = "allow_from_public_instnaces"
-  description = "Allow SSH from public instances only"
+  description = "Allow traffice from public instance sg only"
+  vpc_id      = local.vpc_id
 
   dynamic "ingress" {
 
@@ -76,14 +114,11 @@ resource "aws_security_group" "private_sg" {
   }
 }
 
-
-
 ################## SSH key generation ################## 
 resource "tls_private_key" "ssh" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
-
 
 ################## Extracting private key ################## 
 resource "local_file" "private_key" {
@@ -92,26 +127,34 @@ resource "local_file" "private_key" {
   file_permission = "0400"
 }
 
-
 ################## Create AWS key pair ################## 
 resource "aws_key_pair" "aws_ec2_access_key" {
   key_name   = var.key_name
   public_key = tls_private_key.ssh.public_key_openssh
 }
 
-################## Create AWS EC2 Instance with "Amozon linux" AMI ################## 
+################## Create AWS EC2 Instance on Public Subnet ################ 
 resource "aws_instance" "public_hosts" {
-  count         = var.amazon_linux_host_count
-  ami           = data.aws_ami.amazon_linux_ami.id
-  instance_type = var.instance_type
-  #subnet_id = module.vpc.pu
-  key_name               = aws_key_pair.aws_ec2_access_key.id
-  vpc_security_group_ids = [aws_security_group.public_sg.id]
-
+  for_each               = { for key, value in local.public_instance : key => value }
+  ami                    = each.value.ami
+  instance_type          = each.value.instance_type
+  subnet_id              = each.value.subnet_id
+  key_name               = each.value.key_name
+  vpc_security_group_ids = each.value.vpc_security_group_ids
   tags = {
-    "Name" = "public-instance-${count.index + 1}"
-
+    "Name" = "public-instance-${each.key}"
   }
 }
 
-
+################## Create AWS EC2 Instance on Private Subnet ################ 
+resource "aws_instance" "private_hosts" {
+  for_each               = { for key, value in local.private_instance : key => value }
+  ami                    = each.value.ami
+  instance_type          = each.value.instance_type
+  subnet_id              = each.value.subnet_id
+  key_name               = each.value.key_name
+  vpc_security_group_ids = each.value.vpc_security_group_ids
+  tags = {
+    "Name" = "private-instance-${each.key}"
+  }
+}

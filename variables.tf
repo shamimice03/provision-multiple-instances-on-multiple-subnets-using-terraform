@@ -10,12 +10,17 @@ variable "key_name" {
   default     = "aws_access_key"
 }
 
-variable "amazon_linux_host_count" {
+variable "public_instance_per_subnet" {
+  description = "Number of amazon linux host"
+  type        = number
+  default     = 3
+}
+
+variable "private_instance_per_subnet" {
   description = "Number of amazon linux host"
   type        = number
   default     = 2
 }
-
 
 variable "private_key_location" {
   description = "Location of the private key"
@@ -44,5 +49,9 @@ variable "private_instance_sg_ports" {
       "port" : 22,
       "protocol" : "tcp"
     },
+    {
+      "port" : -1,
+      "protocol" : "icmp"
+    }
   ]
 }
