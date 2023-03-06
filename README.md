@@ -16,7 +16,7 @@ See the following chart for a better understanding:
 | Public subnet  | AZ | Instance Count         
 | ------------- |:-------------:| :-------------:|
 | Private Subnet-1 | ap-northeast-1a |  2
-| Private Subnet-1 | ap-northeast-1c |  2
+| Private Subnet-2 | ap-northeast-1c |  2
 
 ### VPC:
 Let's start with creating a `VPC` using the VPC module:
