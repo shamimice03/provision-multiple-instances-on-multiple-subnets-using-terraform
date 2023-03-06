@@ -9,7 +9,7 @@ See the following chart for a better understanding:
 | Public subnet  | AZ | Instance Count         
 | ------------- |:-------------:| :-------------:|
 | Public Subnet-1 | ap-northeast-1a |  3
-| Public Subnet-1 | ap-northeast-1c |  3
+| Public Subnet-2 | ap-northeast-1c |  3
 | Public Subnet-3 | ap-northeast-1d |  3
 
 ### Private Instances
