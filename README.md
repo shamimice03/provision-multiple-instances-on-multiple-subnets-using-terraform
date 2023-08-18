@@ -1,4 +1,4 @@
-## Provision multiple instances on multiple subnets using terraform
+## Provision multiple instances on multiple subnets using Terraform
 ### Overview
 Suppose, we are in a situation where we have three public subnets and two private subnets. And on top of that, we require to provision three EC2 instances on each public subnet and two EC2 instances on each private subnet.
 
@@ -21,7 +21,7 @@ See the following chart for a better understanding:
 ### VPC:
 Let's start with creating a `VPC` using the VPC module:
 
-```
+```hcl
 module "vpc" {
 
   source = "github.com/shamimice03/terraform-aws-vpc"
@@ -48,7 +48,7 @@ module "vpc" {
 ### Local Varibles
 To achieve our main goal, which is to provision multiple instances on multiple subnets, we can create two `local` variables like this:
 
-```
+```hcl
 locals {
   public_subnets  = module.vpc.public_subnet_id
   private_subnets = module.vpc.private_subnet_id
@@ -81,13 +81,13 @@ locals {
 
 ```
 We can use `terraform console` to see what these two `local` variables will generate:
-```
+```hcl
 terraform console
 local.public_instance_conf
 local.private_instance_conf
 ```
 The two `local` variables will generate some like this:
-```
+```hcl
 > local.public_instance_conf
 [
   [
@@ -126,14 +126,14 @@ The two `local` variables will generate some like this:
 ```
 
 But we still need to finish. We have to flatten the generated configuration. So, we can use it inside the `aws_instance` resource block.
-```
+```hcl
 locals {
   public_instance  = flatten(local.public_instance_conf)
   private_instance = flatten(local.private_instance_conf)
 }
 ```
 Similarly, we can check the output after applying `flatten` function. Use `terraform console`
-```
+```hcl
 > local.public_instance
 [
   {
@@ -179,7 +179,7 @@ Similarly, we can check the output after applying `flatten` function. Use `terra
 
 
 ### Create Instances - Public 
-```
+```hcl
 resource "aws_instance" "public_hosts" {
   for_each               = { for key, value in local.public_instance : key => value }
   ami                    = each.value.ami
@@ -193,7 +193,7 @@ resource "aws_instance" "public_hosts" {
 }
 ```
 ### Create Instances - Private
-```
+```hcl
 resource "aws_instance" "private_hosts" {
   for_each               = { for key, value in local.private_instance : key => value }
   ami                    = each.value.ami
@@ -212,7 +212,7 @@ In the above configuration the tricky part is the following line:
 
 The above line will help us to identify the configuration of each instance separately by creating `key` for each configuration. If we run `terraform console` once more and run the following command, then we will see the differences:
 
-```
+```hcl
 > {for key, value in local.public_instance : key => value}
 {
   "0" = {
